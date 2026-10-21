@@ -1,0 +1,37 @@
+services:
+  workflow-center:
+    image: ghcr.io/kouleen/workflow-center:latest
+    container_name: workflow-center
+    environment:
+      - ETCD_ENDPOINTS=${ETCD_ENDPOINTS}
+      - ADDRESS=${ADDRESS}
+      - REDIS_ADDR=${REDIS_ADDR}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB}
+      - MYSQL_USERNAME=${MYSQL_USERNAME}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_SLAVE1_USERNAME=${MYSQL_SLAVE1_USERNAME}
+      - MYSQL_SLAVE1_PASSWORD=${MYSQL_SLAVE1_PASSWORD}
+      - MYSQL_SLAVE1_HOST=${MYSQL_SLAVE1_HOST}
+      - MYSQL_SLAVE1_PORT=${MYSQL_SLAVE1_PORT}
+      - MYSQL_SLAVE1_DATABASE=${MYSQL_SLAVE1_DATABASE}
+      - MYSQL_SLAVE2_USERNAME=${MYSQL_SLAVE2_USERNAME}
+      - MYSQL_SLAVE2_PASSWORD=${MYSQL_SLAVE2_PASSWORD}
+      - MYSQL_SLAVE2_HOST=${MYSQL_SLAVE2_HOST}
+      - MYSQL_SLAVE2_PORT=${MYSQL_SLAVE2_PORT}
+      - MYSQL_SLAVE2_DATABASE=${MYSQL_SLAVE2_DATABASE}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+    networks:
+      - etcd-internal
+      - mysql-internal
+      - redis-internal
+networks:
+  etcd-internal:
+    external: true
+  mysql-internal:
+    external: true
+  redis-internal:
+    external: true
