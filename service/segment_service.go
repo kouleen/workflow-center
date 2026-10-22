@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/kouleen/common/pkg/ctxutil"
@@ -46,6 +47,13 @@ func QuerySegment(ctx context.Context, req *workflow.WorkflowSegmentRequest) (re
 }
 
 func SaveSegment(ctx context.Context, req *workflow.WorkflowSegmentRequest) (resp bool, err error) {
+	list, err := repository.QuerySegmentByBizTag(ctx, req.GetBizTag())
+	if err != nil {
+		return
+	}
+	if len(list) > 0 {
+		return false, errors.New("biz_tag already exists")
+	}
 	node, err := snowflake.NewNode(1)
 	if err != nil {
 		return false, err

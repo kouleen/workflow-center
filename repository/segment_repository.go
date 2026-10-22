@@ -75,6 +75,14 @@ func QuerySegmentByIdList(ctx context.Context, idList []int64) (resp []*modle.Wo
 	return
 }
 
+func QuerySegmentByBizTag(ctx context.Context, bizTag string) (resp []*modle.WorkflowSegment, err error) {
+	query := mysql.GetReadMysqlDDB().WithContext(ctx).Model(&modle.WorkflowSegment{}).Where("is_delete = 0 and biz_tag = ?", bizTag)
+	if err = query.Find(&resp).Error; err != nil {
+		return nil, err
+	}
+	return
+}
+
 func CreateSegment(ctx context.Context, entity *modle.WorkflowSegment) error {
 	return mysql.GetWriteMysqlDDB().WithContext(ctx).Create(entity).Error
 }
