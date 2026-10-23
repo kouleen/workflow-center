@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/cloudwego/kitex v0.16.4
-	github.com/kouleen/common v0.0.80
+	github.com/kouleen/common v0.0.82
 	github.com/kouleen/idl v0.0.65
 	gorm.io/gorm v1.31.2
 )
