@@ -44,3 +44,8 @@ func (s *WorkflowServiceImpl) UpdateWorkflowSegmentStatus(ctx context.Context, r
 func (s *WorkflowServiceImpl) DeleteWorkflowSegment(ctx context.Context, req *workflow.WorkflowSegmentRequest) (resp bool, err error) {
 	return handle.DeleteSegment(ctx, req)
 }
+
+// FetchWorkflowSegment implements the WorkflowServiceImpl interface.
+func (s *WorkflowServiceImpl) FetchWorkflowSegment(ctx context.Context, req *workflow.WorkflowSegmentRequest) (resp bool, err error) {
+	return handle.FetchSegment(ctx, req)
+}

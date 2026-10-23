@@ -3,9 +3,13 @@ package service
 import (
 	"context"
 	"errors"
+	"strconv"
+	"time"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/kouleen/common/pkg/ctxutil"
+	"github.com/kouleen/common/pkg/logutil"
+	"github.com/kouleen/common/pkg/redis"
 	"github.com/kouleen/idl/kitex_gen/workflow"
 	"github.com/kouleen/workflow-center/modle"
 	"github.com/kouleen/workflow-center/repository"
@@ -107,6 +111,33 @@ func UpdateSegmentStatus(ctx context.Context, req *workflow.WorkflowSegmentReque
 		return
 	}
 	item.Status = req.Status
+	item.UpdatedBy = ctxutil.GetUserId(ctx)
+	if err = repository.UpdateSegment(ctx, item); err != nil {
+		return
+	}
+	return true, nil
+}
+
+func FetchSegment(ctx context.Context, req *workflow.WorkflowSegmentRequest) (resp bool, err error) {
+	idKey := strconv.FormatInt(req.GetId(), 10)
+	lock := redis.NewLock("workflow:segment:"+idKey, 3*time.Second)
+	if err = lock.Lock(ctx, 10*time.Second); err != nil {
+		return false, err
+	}
+	defer func() {
+		_, err = lock.Unlock(ctx)
+		if err != nil {
+			logutil.CtxError(ctx, "lock unlock err: %v", err)
+		}
+	}()
+	item, err := repository.QuerySegmentById(ctx, req.GetId())
+	if err != nil {
+		return
+	}
+	if item.MaxID >= req.GetMaxId() {
+		return false, errors.New("max_id out of range")
+	}
+	item.MaxID = req.GetMaxId()
 	item.UpdatedBy = ctxutil.GetUserId(ctx)
 	if err = repository.UpdateSegment(ctx, item); err != nil {
 		return

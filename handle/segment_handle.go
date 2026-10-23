@@ -48,6 +48,13 @@ func UpdateSegmentStatus(ctx context.Context, req *workflow.WorkflowSegmentReque
 	return service.UpdateSegmentStatus(ctx, req)
 }
 
+func FetchSegment(ctx context.Context, req *workflow.WorkflowSegmentRequest) (resp bool, err error) {
+	if err = checkUpdateSegmentParams(req); err != nil {
+		return
+	}
+	return service.FetchSegment(ctx, req)
+}
+
 func checkSaveSegmentParams(req *workflow.WorkflowSegmentRequest) error {
 	if req.GetBizTag() == "" {
 		return errors.New("biz tag is required")
