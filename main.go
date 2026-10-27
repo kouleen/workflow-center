@@ -6,6 +6,8 @@ import (
 	"github.com/kouleen/common/middleware"
 	"github.com/kouleen/idl/kitex_gen/rpc"
 	"github.com/kouleen/idl/kitex_gen/workflow/workflowservice"
+	_ "github.com/kouleen/workflow-center/listener"
+	_ "github.com/kouleen/workflow-center/message"
 )
 
 func main() {
