@@ -19,6 +19,8 @@ import (
 	"github.com/kouleen/common/message"
 	"github.com/kouleen/common/pkg/ctxutil"
 	"github.com/kouleen/common/pkg/logutil"
+	"github.com/kouleen/idl/kitex_gen/common"
+	"github.com/kouleen/idl/kitex_gen/system"
 )
 
 func init() {
@@ -145,32 +147,27 @@ type DbHandle struct {
 	canal.DummyEventHandler
 }
 
-// rowToMap []any 行数据 → map[字段名]值
-func rowToMap(table *schema.Table, row []any) map[string]any {
+// rowToJson []any 行数据 → map[字段名]值
+func rowToJson(table *schema.Table, row []any) string {
 	ret := make(map[string]any, len(table.Columns))
 	for idx, col := range table.Columns {
 		if idx < len(row) {
 			ret[col.Name] = row[idx]
 		}
 	}
-	return ret
+	res, err := json.Marshal(ret)
+	if err != nil {
+		return ""
+	}
+	return string(res)
 }
-
-type BinlogMsg struct {
-	DB     string         `json:"db"`
-	Table  string         `json:"table"`
-	Action string         `json:"action"`
-	Before map[string]any `json:"before,omitempty"`
-	After  map[string]any `json:"after,omitempty"`
-}
-
-func sendBinlogMsg(ctx context.Context, msg BinlogMsg) error {
-	messageByte, err := json.Marshal(msg)
+func sendBinlogMsg(ctx context.Context, req []*system.SystemChangeLogRequest) error {
+	messageByte, err := json.Marshal(req)
 	if err != nil {
 		return err
 	}
 
-	return message.SendToQueue(ctx, "workflow.data.listener", &message.Message{
+	return message.SendToQueue(ctx, common.SYSTEM_CHANGE_LOG_QUEUE, &message.Message{
 		TraceID:     ctxutil.GetTraceId(ctx),
 		MessageID:   strconv.Itoa(int(uuid.New().ID())),
 		ContentType: "application/json",
@@ -188,42 +185,51 @@ func (p *DbHandle) OnRow(e *canal.RowsEvent) error {
 
 	switch action {
 	case canal.InsertAction:
-		for _, row := range e.Rows {
-			afterMap := rowToMap(e.Table, row)
-			if err := sendBinlogMsg(ctx, BinlogMsg{
-				DB:     dbName,
+		req := make([]*system.SystemChangeLogRequest, len(e.Rows))
+		for index, row := range e.Rows {
+			afterJson := rowToJson(e.Table, row)
+			systemChangeLog := &system.SystemChangeLogRequest{
+				Schema: dbName,
 				Table:  tableName,
 				Action: action,
-				After:  afterMap,
-			}); err != nil {
-				return err
+				After:  afterJson,
 			}
+			req[index] = systemChangeLog
+		}
+		if err := sendBinlogMsg(ctx, req); err != nil {
+			return err
 		}
 	case canal.DeleteAction:
-		for _, row := range e.Rows {
-			beforeMap := rowToMap(e.Table, row)
-			if err := sendBinlogMsg(ctx, BinlogMsg{
-				DB:     dbName,
+		req := make([]*system.SystemChangeLogRequest, len(e.Rows))
+		for index, row := range e.Rows {
+			beforeJson := rowToJson(e.Table, row)
+			systemChangeLog := &system.SystemChangeLogRequest{
+				Schema: dbName,
 				Table:  tableName,
 				Action: action,
-				Before: beforeMap,
-			}); err != nil {
-				return err
+				Before: beforeJson,
 			}
+			req[index] = systemChangeLog
+		}
+		if err := sendBinlogMsg(ctx, req); err != nil {
+			return err
 		}
 	case canal.UpdateAction:
+		req := make([]*system.SystemChangeLogRequest, 0, len(e.Rows)/2)
 		for i := 0; i+1 < len(e.Rows); i += 2 {
-			beforeMap := rowToMap(e.Table, e.Rows[i])
-			afterMap := rowToMap(e.Table, e.Rows[i+1])
-			if err := sendBinlogMsg(ctx, BinlogMsg{
-				DB:     dbName,
+			beforeJson := rowToJson(e.Table, e.Rows[i])
+			afterJson := rowToJson(e.Table, e.Rows[i+1])
+			systemChangeLog := &system.SystemChangeLogRequest{
+				Schema: dbName,
 				Table:  tableName,
 				Action: action,
-				Before: beforeMap,
-				After:  afterMap,
-			}); err != nil {
-				return err
+				Before: beforeJson,
+				After:  afterJson,
 			}
+			req = append(req, systemChangeLog)
+		}
+		if err := sendBinlogMsg(ctx, req); err != nil {
+			return err
 		}
 	}
 	return nil

@@ -4,19 +4,19 @@ go 1.25.0
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
+	github.com/bytedance/gopkg v0.1.4
 	github.com/cloudwego/kitex v0.16.4
 	github.com/go-mysql-org/go-mysql v1.16.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/google/uuid v1.6.0
-	github.com/kouleen/common v0.0.82
-	github.com/kouleen/idl v0.0.65
+	github.com/kouleen/common v0.0.83
+	github.com/kouleen/idl v0.0.66
 	gorm.io/gorm v1.31.2
 )
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
-	github.com/bytedance/gopkg v0.1.4 // indirect
 	github.com/bytedance/sonic v1.15.3 // indirect
 	github.com/bytedance/sonic/loader v0.5.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
