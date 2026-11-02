@@ -49,3 +49,23 @@ func (s *WorkflowServiceImpl) DeleteWorkflowSegment(ctx context.Context, req *wo
 func (s *WorkflowServiceImpl) FetchWorkflowSegment(ctx context.Context, req *workflow.WorkflowSegmentRequest) (resp bool, err error) {
 	return handle.FetchSegment(ctx, req)
 }
+
+func (s *WorkflowServiceImpl) QueryWorkflowProcessPage(ctx context.Context, req *workflow.WorkflowProcessRequest) (r *workflow.WorkflowProcessPageResponse, err error) {
+	return handle.QueryProcessPage(ctx, req)
+}
+
+func (s *WorkflowServiceImpl) QueryWorkflowProcess(ctx context.Context, req *workflow.WorkflowProcessRequest) (resp *workflow.WorkflowProcessResponse, err error) {
+	return handle.QueryProcess(ctx, req)
+}
+
+func (s *WorkflowServiceImpl) SaveWorkflowProcess(ctx context.Context, req *workflow.WorkflowProcessRequest) (resp *workflow.WorkflowProcessResponse, err error) {
+	return handle.CreateProcess(ctx, req)
+}
+
+func (s *WorkflowServiceImpl) UpdateWorkflowProcess(ctx context.Context, req *workflow.WorkflowProcessRequest) (resp bool, err error) {
+	return handle.UpdateProcess(ctx, req)
+}
+
+func (s *WorkflowServiceImpl) DeleteWorkflowProcess(ctx context.Context, req *workflow.WorkflowProcessRequest) (resp bool, err error) {
+	return handle.DeleteProcess(ctx, req)
+}
