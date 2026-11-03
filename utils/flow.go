@@ -12,6 +12,7 @@ import (
 	"github.com/kouleen/common/pkg/ctxutil"
 	"github.com/kouleen/idl/kitex_gen/rpc"
 	"github.com/kouleen/idl/kitex_gen/workflow"
+	"github.com/kouleen/workflow-center/modle"
 )
 
 var moduleHandler = map[string]func() string{
@@ -42,6 +43,10 @@ var moduleHandler = map[string]func() string{
 }
 
 func Review(ctx context.Context, req *workflow.WorkflowProcessRequest) (err error) {
+	// 不是审批操作
+	if !modle.IsAction(req.GetStatus()) {
+		return nil
+	}
 	traceId := ctxutil.GetTraceId(ctx)
 	userId := ctxutil.GetUserId(ctx)
 	req.UpdatedBy = &userId
