@@ -6,6 +6,18 @@ import (
 	"github.com/kouleen/idl/kitex_gen/workflow"
 )
 
+const (
+	PREPARE  int8 = 1 // 待审批
+	REVIEW   int8 = 2 // 处理中
+	APPROVED int8 = 3 // 已批准
+	REJECTED int8 = 4 // 已驳回
+)
+
+// IsAction 审核操作
+func IsAction(status int8) bool {
+	return status == REJECTED || status == APPROVED
+}
+
 type WorkflowProcess struct {
 	ID         int64      `json:"id,string" gorm:"column:id;primary_key;not null"`
 	FlowNo     string     `json:"flowNo" gorm:"column:flow_no;not null;unique:uq_flow_no"`
