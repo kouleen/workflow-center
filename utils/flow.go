@@ -43,6 +43,8 @@ var moduleHandler = map[string]func() string{
 
 func Review(ctx context.Context, req *workflow.WorkflowProcessRequest) (err error) {
 	traceId := ctxutil.GetTraceId(ctx)
+	userId := ctxutil.GetUserId(ctx)
+	req.UpdatedBy = &userId
 	messageByte, err := json.Marshal(req)
 	if err != nil {
 		return err

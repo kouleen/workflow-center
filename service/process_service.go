@@ -5,6 +5,7 @@ import (
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/kouleen/common/pkg/ctxutil"
+	"github.com/kouleen/common/pkg/logutil"
 	"github.com/kouleen/common/pkg/redis"
 	"github.com/kouleen/idl/kitex_gen/workflow"
 	"github.com/kouleen/workflow-center/modle"
@@ -42,6 +43,7 @@ func CreateProcess(ctx context.Context, req *workflow.WorkflowProcessRequest) (r
 	}
 	id := node.Generate().Int64()
 	process := &redis.CodeProcess{}
+	userId := ctxutil.GetUserId(ctx)
 	entity := &modle.WorkflowProcess{
 		ID:        id,
 		FlowNo:    process.GenerateCode(ctx, &modle.ProcessCodeRule{}),
@@ -49,12 +51,45 @@ func CreateProcess(ctx context.Context, req *workflow.WorkflowProcessRequest) (r
 		Business:  req.GetBusiness(),
 		TradeNo:   req.GetTradeNo(),
 		Remark:    req.GetRemark(),
-		CreatedBy: ctxutil.GetUserId(ctx),
+		CreatedBy: userId,
 	}
 	if err = repository.CreateProcess(ctx, entity); err != nil {
 		return nil, err
 	}
-	return entity.ConvertResp(), nil
+	if req.GetAuto() {
+		traceId := ctxutil.GetTraceId(ctx)
+		go func() {
+			ctxBg := ctxutil.SetMeta(context.Background(), traceId, userId)
+			defer func() {
+				if err := recover(); err != nil {
+					logutil.CtxInfo(ctxBg, "recover panic: %v", err)
+				}
+			}()
+			approve := int8(3)
+			success, err2 := UpdateProcess(ctxBg, &workflow.WorkflowProcessRequest{
+				Id:       &id,
+				FlowNo:   entity.FlowNo,
+				Module:   entity.Module,
+				Business: entity.Business,
+				TradeNo:  entity.TradeNo,
+				Remark:   entity.Remark,
+				Status:   &approve,
+			})
+			if err2 != nil {
+				logutil.CtxError(ctxBg, "UpdateProcess err: %v", err2)
+				return
+			}
+			if !success {
+				logutil.CtxWarn(ctxBg, "UpdateProcess err")
+			}
+		}()
+	}
+	return &workflow.WorkflowProcessResponse{
+		FlowNo:   entity.FlowNo,
+		Module:   entity.Module,
+		Business: entity.Business,
+		TradeNo:  entity.TradeNo,
+	}, nil
 }
 
 func UpdateProcess(ctx context.Context, req *workflow.WorkflowProcessRequest) (resp bool, err error) {
