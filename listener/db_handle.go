@@ -67,6 +67,7 @@ func init() {
 			return
 		}
 	}()
+	go workerMessage()
 }
 
 // 查询当前最新位点（首次运行、无存档时用）
@@ -161,23 +162,58 @@ func rowToJson(table *schema.Table, row []any) string {
 	}
 	return string(res)
 }
+
+type MessageCtx struct {
+	TraceId string
+	Body    []byte
+}
+
+var messageChan = make(chan MessageCtx, 100)
+
 func sendBinlogMsg(ctx context.Context, req []*system.SystemChangeLogRequest) error {
 	messageByte, err := json.Marshal(req)
 	if err != nil {
 		return err
 	}
+	select {
+	case messageChan <- MessageCtx{
+		TraceId: ctxutil.GetTraceId(ctx),
+		Body:    messageByte,
+	}:
+		// 写入缓冲成功，直接返回，业务不阻塞
+		return nil
+	case <-ctx.Done():
+		// 请求上下文取消，放弃写入
+		return ctx.Err()
+		//default:
+		//	// channel满了，直接返回错误/丢弃消息，防止业务阻塞（可选策略）
+		//	return fmt.Errorf("message channel full")
+	}
+}
 
-	return message.SendToQueue(ctx, common.SYSTEM_CHANGE_LOG_QUEUE, &message.Message{
-		TraceID:     ctxutil.GetTraceId(ctx),
-		MessageID:   strconv.Itoa(int(uuid.New().ID())),
-		ContentType: "application/json",
-		Body:        messageByte,
-		Headers:     make(map[string]any),
-	})
+func workerMessage() {
+	for messageBody := range messageChan {
+		ctx := metainfo.WithPersistentValue(context.Background(), "x-trace-id", messageBody.TraceId)
+		if err := message.SendToQueue(ctx, common.SYSTEM_CHANGE_LOG_QUEUE, &message.Message{
+			TraceID:     messageBody.TraceId,
+			MessageID:   uuid.NewString(),
+			ContentType: "application/json",
+			Body:        messageBody.Body,
+			Headers:     make(map[string]any),
+		}); err != nil {
+			logutil.CtxError(ctx, "send message to queue failed: %v", err)
+			// 这里可以加重试、投递到死信队列
+		}
+	}
 }
 
 func (p *DbHandle) OnRow(e *canal.RowsEvent) error {
-	ctx := metainfo.WithPersistentValue(context.Background(), "x-trace-id", uuid.New().String())
+	ctx := metainfo.WithPersistentValue(context.Background(), "x-trace-id", uuid.NewString())
+	defer func() {
+		if err := recover(); err != nil {
+			logutil.CtxError(ctx, "OnRow panic: %v", err)
+		}
+	}()
 	dbName := e.Table.Schema
 	tableName := e.Table.Name
 	action := e.Action

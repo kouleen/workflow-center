@@ -9,8 +9,8 @@ require (
 	github.com/go-mysql-org/go-mysql v1.16.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/google/uuid v1.6.0
-	github.com/kouleen/common v0.0.89
-	github.com/kouleen/idl v0.0.72
+	github.com/kouleen/common v0.0.106
+	github.com/kouleen/idl v0.0.87
 	gorm.io/gorm v1.31.2
 )
 
