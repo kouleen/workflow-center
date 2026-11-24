@@ -122,7 +122,7 @@ jobs:
     steps:
       - name: Call Custom Callback API
         run: |
-          curl -X POST "https://cloud.kouleen.cn/api/docker/webhook/put?secret=${{ secrets.HOOK_SECRET }}" \
+          curl -X POST "https://kouleen.dpdns.org/api/docker/webhook/put?secret=${{ secrets.HOOK_SECRET }}" \
           -H "Content-Type: application/json" \
           -d '{
             "runId": "${{ github.run_id }}",
