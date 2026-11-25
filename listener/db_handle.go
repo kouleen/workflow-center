@@ -67,7 +67,9 @@ func init() {
 			return
 		}
 	}()
-	go workerMessage()
+	for i := 0; i < 10; i++ {
+		go workerMessage()
+	}
 }
 
 // 查询当前最新位点（首次运行、无存档时用）
@@ -192,6 +194,7 @@ func sendBinlogMsg(ctx context.Context, req []*system.SystemChangeLogRequest) er
 }
 
 func workerMessage() {
+	headers := make(map[string]any)
 	for messageBody := range messageChan {
 		ctx := metainfo.WithPersistentValue(context.Background(), "x-trace-id", messageBody.TraceId)
 		if err := message.SendToQueue(ctx, common.SYSTEM_CHANGE_LOG_QUEUE, &message.Message{
@@ -199,7 +202,7 @@ func workerMessage() {
 			MessageID:   uuid.NewString(),
 			ContentType: "application/json",
 			Body:        messageBody.Body,
-			Headers:     make(map[string]any),
+			Headers:     headers,
 		}); err != nil {
 			logutil.CtxError(ctx, "send message to queue failed: %v", err)
 			// 这里可以加重试、投递到死信队列
